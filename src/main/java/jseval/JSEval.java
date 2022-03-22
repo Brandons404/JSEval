@@ -1,25 +1,90 @@
 package jseval;
 
 import arc.util.*;
+import arc.files.Fi;
+import arc.struct.Seq;
 import mindustry.gen.*;
 import mindustry.mod.*;
-
-import static mindustry.Vars.*;
+import java.util.regex.*;
+import mindustry.Vars;
+import static mindustry.Vars.dataDirectory;
+import static mindustry.Vars.mods;
 
 @SuppressWarnings("unused")
+
 public class JSEval extends Plugin {
+
+    private class Script {
+        public Pattern namePattern = Pattern.compile("(?<=//NAME \").*(?!\\n)");
+        public Pattern descPattern = Pattern.compile("(?<=//DESCRIPTION \").*(?!\\n)");
+        public String name, description, code;
+        public Fi file;
+
+        public Script(Fi file){
+            this(file.nameWithoutExtension(), file);
+        }
+
+        public Script(String name, Fi file){
+            this.file = file;
+            this.code = file.readString();
+
+            this.name = getName(code, name);
+            this.description = getDesc(code, "");
+        }
+
+        public String run(){
+            if(Vars.net.client()){
+                if(Vars.player.admin){
+                    Call.sendChatMessage("/js " + code);
+                    return "executed";
+                }
+                return "[scarlet]Scripts disabled[]";
+            }
+            return mods.getScripts().runConsole(code);
+        }
+
+        public String getName(String input, String def){
+            Matcher nameMatcher = namePattern.matcher(input);
+            if(nameMatcher.find()){
+                return nameMatcher.group(nameMatcher.groupCount());
+            }else return def;
+        }
+
+        public String getDesc(String input, String def){
+            Matcher descMatcher = descPattern.matcher(input);
+            if(descMatcher.find()){
+                return descMatcher.group(descMatcher.groupCount());
+            }else return def;
+        }
+    }
+
+    public static Fi scriptDirectory, setupDirectory;
+    public static Fi[] scriptFiles, setupFiles;
+    public static Seq<Script> scripts = new Seq<>();
+
+    public void load() {
+        scriptDirectory = dataDirectory.child("scripts/");
+        scriptFiles = scriptDirectory.list(".js");
+
+        if(scriptFiles.length == 0){
+            Log.infoTag("JS-Loader", "No scripts found.");
+        }else {
+            Log.infoTag("JS-Loader", "Found " + scriptFiles.length + " scripts");
+
+            for (Fi file : scriptFiles) {
+                scripts.add(new Script(file));
+            }
+        }
+
+    };
+
 
     @Override
     public void registerClientCommands(CommandHandler handler) {
         handler.<Player>register("js", "<code...>", "Execute JavaScript code.", (args, player) -> {
-            if (player.admin) {
+
                  String output = mods.getScripts().runConsole(args[0]);
                  player.sendMessage("> " + (isError(output) ? "[#ff341c]" + output : output));
-            } else {
-                 Call.sendMessage(player.name + " [JS]: "+ args[0]);
-                 String output = mods.getScripts().runConsole(args[0]);
-                 player.sendMessage("> " + (isError(output) ? "[#ff341c]" + output : output));
-            }
         });
     }
 
@@ -33,3 +98,4 @@ public class JSEval extends Plugin {
         }
     }
 }
+
