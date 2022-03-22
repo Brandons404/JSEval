@@ -1,4 +1,4 @@
-package jseval;
+package jsevalPlus;
 
 import arc.util.*;
 import arc.files.Fi;
@@ -12,7 +12,7 @@ import static mindustry.Vars.mods;
 
 @SuppressWarnings("unused")
 
-public class JSEval extends Plugin {
+public class JSEvalPlus extends Plugin {
 
     private class Script {
         public Pattern namePattern = Pattern.compile("(?<=//NAME \").*(?!\\n)");
@@ -81,10 +81,20 @@ public class JSEval extends Plugin {
 
     @Override
     public void registerClientCommands(CommandHandler handler) {
+
         handler.<Player>register("js", "<code...>", "Execute JavaScript code.", (args, player) -> {
 
                  String output = mods.getScripts().runConsole(args[0]);
                  player.sendMessage("> " + (isError(output) ? "[#ff341c]" + output : output));
+        });
+
+        handler.<Player>register("load", "load JavaScript files.", (args, player) -> {
+            load();
+            for (int i = 0; i< scripts.size; i++) {
+                player.sendMessage(">[#77dd77]found[white]:[#7955be] " + scripts.get(i).name + ".js");
+                scripts.get(i).run();
+            };
+            player.sendMessage(">[#77dd77]" + scripts.size + " files loaded");
         });
     }
 
