@@ -3,5 +3,6 @@
     "description": "Allows players to execute JavaScript code using a special command, and allows loading of custom js files",
     "author": "Brandons404",
     "main": "jsevalPlus.JSEvalPlus",
-    "version": "1.0"
+    "version": "1.1"
+
 }
